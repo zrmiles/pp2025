@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Распознавание номеров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-form {
+            margin-bottom: 20px;
+        }
+        .preview {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .confidence {
+            color: #666;
+            font-size: 0.9em;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Распознавание автомобильных номеров</h1>
+        
+        <div class="upload-form">
+            <h2>Загрузите фотографию</h2>
+            <input type="file" id="imageInput" accept="image/*">
+            <button onclick="uploadImage()">Распознать номер</button>
+        </div>
+
+        <div id="preview" class="preview"></div>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function uploadImage() {
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Пожалуйста, выберите файл');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image_file', file);
+
+            // Показываем превью
+            const preview = document.getElementById('preview');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%;">`;
+            }
+            reader.readAsDataURL(file);
+
+            // Отправляем запрос
+            fetch('/detect/image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                if (data.detected_plates && data.detected_plates.length > 0) {
+                    let html = '<h3>Результаты распознавания:</h3>';
+                    data.detected_plates.forEach(plate => {
+                        html += `
+                            <div>
+                                <p>Номер: ${plate.plate_number}</p>
+                                <p class="confidence">Уверенность: ${(plate.confidence * 100).toFixed(2)}%</p>
+                            </div>
+                        `;
+                    });
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<p>Номера не обнаружены</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = '<p>Произошла ошибка при обработке изображения</p>';
+            });
+        }
+    </script>
+</body>
+</html> 
