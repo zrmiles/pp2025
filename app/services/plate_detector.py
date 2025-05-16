@@ -12,34 +12,34 @@ ocr = PaddleOCR(lang='ru', use_angle_cls=True)
 
 class PlateDetector:
     def __init__(self):
-        # Загружаем модель YOLO для детекции автомобилей
+        
         self.car_model = YOLO('yolov8n.pt')
-        # Загружаем модель YOLO для детекции номеров (нужно будет обучить или найти предобученную)
-        self.plate_model = YOLO('yolov8n.pt')  # Временно используем ту же модель
+        
+        self.plate_model = YOLO('yolov8n.pt')  
         self.plate_pattern = re.compile(r'^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\s?\d{2,3}$')
         
     def preprocess_image(self, image: np.ndarray) -> np.ndarray:
         """Предобработка изображения для улучшения распознавания"""
-        # Изменяем размер для лучшего распознавания
+        
         image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         
-        # Конвертируем в градации серого
+        
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
-        # Увеличиваем контраст
+        
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         gray = clahe.apply(gray)
         
-        # Применяем размытие для удаления шума
+        
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         
-        # Применяем адаптивную пороговую обработку
+        
         thresh = cv2.adaptiveThreshold(
             blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
             cv2.THRESH_BINARY, 11, 2
         )
         
-        # Удаляем шум
+        
         kernel = np.ones((1, 1), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         
@@ -53,16 +53,16 @@ class PlateDetector:
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if box.cls == 2:  # Класс 2 в COCO dataset - это автомобиль
+                if box.cls == 2:  
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
                     confidence = float(box.conf[0])
                     
-                    # Вырезаем область с автомобилем
+                    
                     car_region = frame[y1:y2, x1:x2]
                     if car_region.size == 0:
                         continue
                     
-                    # Ищем номер в области автомобиля
+                    
                     plate_results = self.plate_model(car_region)
                     for plate_result in plate_results:
                         plate_boxes = plate_result.boxes
@@ -70,15 +70,15 @@ class PlateDetector:
                             px1, py1, px2, py2 = map(int, plate_box.xyxy[0])
                             plate_confidence = float(plate_box.conf[0])
                             
-                            # Вырезаем область с номером
+                            
                             plate_region = car_region[py1:py2, px1:px2]
                             if plate_region.size == 0:
                                 continue
                             
-                            # Предобработка и распознавание
+                            
                             processed_plate = self.preprocess_image(plate_region)
                             
-                            # Настраиваем параметры Tesseract
+                            
                             custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=АВЕКМНОРСТУХ0123456789'
                             plate_text = pytesseract.image_to_string(
                                 processed_plate, 
@@ -86,10 +86,10 @@ class PlateDetector:
                                 config=custom_config
                             )
                             
-                            # Очистка и валидация номера
+                            
                             plate_text = self.clean_plate_number(plate_text)
                             if self.validate_plate_number(plate_text):
-                                # Сохраняем координаты относительно исходного кадра
+                                
                                 abs_coords = (
                                     x1 + px1,
                                     y1 + py1,
@@ -102,9 +102,9 @@ class PlateDetector:
 
     def clean_plate_number(self, text: str) -> str:
         """Очистка распознанного номера"""
-        # Удаляем все символы кроме букв, цифр и пробелов
+        
         cleaned = re.sub(r'[^АВЕКМНОРСТУХ0-9\s]', '', text.upper())
-        # Удаляем лишние пробелы
+        
         cleaned = ' '.join(cleaned.split())
         return cleaned
 
@@ -119,11 +119,11 @@ class PlateDetector:
         if not detected_plates:
             return None
             
-        # Берем номер с наивысшей уверенностью
+    
         best_plate = max(detected_plates, key=lambda x: x[1])
         plate_text, confidence, coords = best_plate
         
-        # Рисуем рамку вокруг номера
+        
         x1, y1, x2, y2 = coords
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(frame, plate_text, (x1, y1-10), 
@@ -145,7 +145,7 @@ class PlateDetector:
             for plate_number, confidence, coords in detected_plates:
                 logger.info(f"Detected plate: {plate_number} with confidence {confidence:.2f}")
                 
-                # Здесь можно добавить сохранение в базу данных
+        
                 
         cap.release()
 

@@ -43,17 +43,17 @@ async def detect_plates(
         )
 
     try:
-        # Создаем временную директорию, если её нет
+    
         temp_dir = "temp"
         os.makedirs(temp_dir, exist_ok=True)
         
-        # Сохраняем временный файл
+        
         temp_path = os.path.join(temp_dir, f"temp_{datetime.now().timestamp()}.mp4")
         with open(temp_path, "wb") as buffer:
             content = await video_file.read()
             buffer.write(content)
         
-        # Обрабатываем видео
+        
         cap = cv2.VideoCapture(temp_path)
         if not cap.isOpened():
             raise HTTPException(status_code=400, detail="Не удалось открыть видеофайл")
@@ -73,7 +73,7 @@ async def detect_plates(
                     plate_text, confidence, processed_frame = result
                     
                     if confidence >= min_confidence:
-                        # Сохраняем кадр с обнаруженным номером
+                    
                         frame_path = os.path.join(
                             "plates",
                             f"plate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -81,7 +81,7 @@ async def detect_plates(
                         os.makedirs("plates", exist_ok=True)
                         cv2.imwrite(frame_path, processed_frame)
                         
-                        # Сохраняем в базу данных
+                        
                         plate_record = DetectedPlate(
                             plate_number=plate_text,
                             confidence=confidence,
@@ -163,10 +163,10 @@ async def detect_plates_from_image(
         )
 
     try:
-        # Создаем директорию для сохранения изображений, если её нет
+        
         os.makedirs("plates", exist_ok=True)
         
-        # Читаем изображение
+        
         content = await image_file.read()
         nparr = np.frombuffer(content, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -174,7 +174,7 @@ async def detect_plates_from_image(
         if image is None:
             raise HTTPException(status_code=400, detail="Не удалось прочитать изображение")
 
-        # Обрабатываем изображение
+        
         result = plate_detector.process_video_frame(image)
         detected_plates = []
         
@@ -182,14 +182,14 @@ async def detect_plates_from_image(
             plate_text, confidence, processed_image = result
             
             if confidence >= min_confidence:
-                # Сохраняем изображение с обнаруженным номером
+                
                 frame_path = os.path.join(
                     "plates",
                     f"plate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 )
                 cv2.imwrite(frame_path, processed_image)
                 
-                # Сохраняем в базу данных
+                
                 plate_record = DetectedPlate(
                     plate_number=plate_text,
                     confidence=confidence,
