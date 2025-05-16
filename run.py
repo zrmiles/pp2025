@@ -7,11 +7,11 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     try:
-        # Инициализируем базу данных перед запуском
+        
         logger.info("Инициализация базы данных...")
         init_db()
         
-        # Запускаем приложение
+        
         logger.info("Запуск приложения...")
         uvicorn.run(
             "app.main:app",

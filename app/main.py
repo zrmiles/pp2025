@@ -19,7 +19,7 @@ from app.models.database import DetectedPlate
 import itertools
 from itertools import permutations
 
-# Инициализация базы данных при запуске
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -203,7 +203,7 @@ async def detect_plate_image(
         detected_plates = []
         all_texts = []
         
-        # Обработка результатов OCR
+        
         for text, conf in plates:
             cleaned = text.replace(' ', '').upper()
             cleaned = to_cyrillic(cleaned)
@@ -213,10 +213,10 @@ async def detect_plate_image(
         blocks = [t['cleaned'] for t in all_texts if t['cleaned']]
         has_rus = any(b in ['RUS', 'RUS.'] for b in blocks)
 
-        # Улучшенное распознавание номеров
+        
         plate_candidates = []
         
-        # Пробуем найти номер в правильном порядке
+        
         for i in range(len(blocks)):
             for j in range(i+1, len(blocks)):
                 for k in range(j+1, len(blocks)):
@@ -225,26 +225,26 @@ async def detect_plate_image(
                         if PLATE_PATTERN.match(candidate):
                             plate_candidates.append(candidate)
         
-        # Если не нашли в правильном порядке, пробуем все перестановки
+        
         if not plate_candidates:
             for combo in itertools.permutations(blocks, 4):
                 candidate = ''.join(combo)
                 if PLATE_PATTERN.match(candidate):
                     plate_candidates.append(candidate)
 
-        # Сохраняем найденные номера
+        
         for candidate in plate_candidates:
             if has_rus:
                 candidate = f"{candidate} RUS"
             
-            # Сохраняем изображение
+            
             frame_path = os.path.join(
                 PLATES_DIR,
                 f"plate_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
             )
             cv2.imwrite(frame_path, image)
             
-            # Сохраняем в базу данных
+            
             try:
                 plate_record = DetectedPlate(
                     plate_number=candidate,

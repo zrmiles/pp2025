@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 def create_tables():
     try:
         logger.info("Начинаем создание таблиц...")
-        Base.metadata.drop_all(bind=engine)  # Удаляем существующие таблицы
-        Base.metadata.create_all(bind=engine)  # Создаем таблицы заново
+        Base.metadata.drop_all(bind=engine)  
+        Base.metadata.create_all(bind=engine)  
         logger.info("Таблицы успешно созданы!")
     except Exception as e:
         logger.error(f"Ошибка при создании таблиц: {str(e)}")
